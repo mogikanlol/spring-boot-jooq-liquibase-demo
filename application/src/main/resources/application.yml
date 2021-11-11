@@ -1,0 +1,8 @@
+spring:
+  aop:
+    proxy-target-class: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/liquibase-demo
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres

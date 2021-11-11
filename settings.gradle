@@ -1,0 +1,4 @@
+
+include 'application',
+        'custom-jooq-generator-strategy',
+        'jooq-generated-data'

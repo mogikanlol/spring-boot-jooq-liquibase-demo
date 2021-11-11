@@ -1,0 +1,91 @@
+plugins {
+    id('java-library')
+    id('org.liquibase.gradle') version('2.0.3')
+    id('nu.studer.jooq') version('6.0')
+}
+
+ext {
+    mainUrl = 'jdbc:postgresql://localhost:5432/liquibase-demo'
+    mainUsername = 'postgres'
+    mainPassword = 'postgres'
+
+    jooqVersion = '3.15.1'
+}
+
+dependencies {
+    liquibaseRuntime 'org.liquibase:liquibase-core:3.8.1'
+    liquibaseRuntime group: 'org.postgresql', name: 'postgresql', version: '42.3.1'
+    liquibaseRuntime group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+
+
+    jooqGenerator group: 'org.postgresql', name: 'postgresql', version: '42.3.1'
+    jooqGenerator project(':custom-jooq-generator-strategy')
+
+}
+
+
+liquibase {
+    activities {
+        main {
+            changeLogFile '../liquibase/changelog/liquibase-changelog.xml'
+            url project.ext.mainUrl
+            username project.ext.mainUsername
+            password project.ext.mainPassword
+        }
+    }
+}
+jooq {
+    version = "${jooqVersion}"  // default (can be omitted)
+    edition = nu.studer.gradle.jooq.JooqEdition.OSS
+
+    configurations {
+        main {  // name of the jOOQ configuration
+            generateSchemaSourceOnCompilation = true  // default (can be omitted)
+
+            generationTool {
+                logging = org.jooq.meta.jaxb.Logging.WARN
+                jdbc {
+                    driver = 'org.postgresql.Driver'
+                    url = 'jdbc:postgresql://localhost:5432/liquibase-demo'
+                    user = 'postgres'
+                    password = 'postgres'
+                    properties {
+                        property {
+                            key = 'ssl'
+                            value = 'false'
+                        }
+                    }
+                }
+                generator {
+                    name = 'org.jooq.codegen.JavaGenerator'
+                    database {
+                        name = 'org.jooq.meta.postgres.PostgresDatabase'
+                        inputSchema = 'public'
+                        excludes = ''' 
+                                | Databasechangelog.*
+                                '''
+                    }
+                    generate {
+                        deprecated = false
+                        records = true
+                        pojos = true
+                        immutablePojos = false
+                        fluentSetters = true
+                        routines = false
+                        indexes = false
+                        udts = true
+                        queues = false
+                        keys = false
+                    }
+                    target {
+                        packageName = 'com.example.app.jooq.model'
+                        directory = 'src/jooq/java'
+                    }
+//                    strategy.name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+                    strategy.name = 'com.example.app.jooq.CustomGeneratorStrategy'
+                }
+            }
+        }
+    }
+}
+generateJooq.dependsOn update
